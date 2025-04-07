@@ -3,14 +3,17 @@ import '../models/exchange_rate.dart';
 import 'currency_selector.dart';
 
 class CurrencyConverter extends StatefulWidget {
+  final VoidCallback onSwapCurrencies;
   final ExchangeRate? exchangeRate;
   final VoidCallback onRefresh;
   final Function(String, String) onCurrencyPairChanged;
+
 
   const CurrencyConverter({
     this.exchangeRate,
     required this.onRefresh,
     required this.onCurrencyPairChanged,
+    required this.onSwapCurrencies,
     super.key,
   });
 
@@ -20,7 +23,6 @@ class CurrencyConverter extends StatefulWidget {
 
 class _CurrencyConverterState extends State<CurrencyConverter> {
   final TextEditingController _amountController = TextEditingController();
-  bool _isConvertingFromBase = true;
   final List<String> _currencies = ['EUR', 'USD', 'GBP', 'JPY', 'CAD', 'AUD'];
 
   @override
@@ -45,7 +47,7 @@ class _CurrencyConverterState extends State<CurrencyConverter> {
               ),
               IconButton(
                 icon: const Icon(Icons.refresh),
-                onPressed: widget.onRefresh,
+                onPressed: widget.onSwapCurrencies,
               ),
             ],
           ),
@@ -65,23 +67,14 @@ class _CurrencyConverterState extends State<CurrencyConverter> {
               ),
               const SizedBox(width: 10),
               CurrencySelector(
-                value: _isConvertingFromBase
-                    ? widget.exchangeRate?.fromCurrency ?? 'EUR'
-                    : widget.exchangeRate?.toCurrency ?? 'USD',
+                value: widget.exchangeRate?.toCurrency ?? 'USD',
                 currencies: _currencies,
                 onChanged: (newCurrency) {
                   if (newCurrency != null) {
-                    if (_isConvertingFromBase) {
-                      widget.onCurrencyPairChanged(
-                        newCurrency,
-                        widget.exchangeRate?.toCurrency ?? 'USD',
-                      );
-                    } else {
-                      widget.onCurrencyPairChanged(
-                        widget.exchangeRate?.fromCurrency ?? 'EUR',
-                        newCurrency,
-                      );
-                    }
+                    widget.onCurrencyPairChanged(
+                      widget.exchangeRate?.fromCurrency ?? 'EUR',
+                      newCurrency,
+                    );
                   }
                 },
               ),
@@ -94,14 +87,9 @@ class _CurrencyConverterState extends State<CurrencyConverter> {
               IconButton(
                 icon: const Icon(Icons.swap_vert),
                 onPressed: () {
-                  setState(() {
-                    _isConvertingFromBase = !_isConvertingFromBase;
-                    _convert();
-                  });
-                  widget.onCurrencyPairChanged(
-                    widget.exchangeRate?.toCurrency ?? 'USD',
-                    widget.exchangeRate?.fromCurrency ?? 'EUR',
-                  );
+                  final from = widget.exchangeRate?.fromCurrency ?? 'EUR';
+                  final to = widget.exchangeRate?.toCurrency ?? 'USD';
+                  widget.onCurrencyPairChanged(to, from);
                 },
               ),
             ],
@@ -123,26 +111,18 @@ class _CurrencyConverterState extends State<CurrencyConverter> {
               ),
               const SizedBox(width: 10),
               CurrencySelector(
-                value: _isConvertingFromBase
-                    ? widget.exchangeRate?.toCurrency ?? 'USD'
-                    : widget.exchangeRate?.fromCurrency ?? 'EUR',
+                value: widget.exchangeRate?.fromCurrency ?? 'EUR',
                 currencies: _currencies,
                 onChanged: (newCurrency) {
                   if (newCurrency != null) {
-                    if (_isConvertingFromBase) {
-                      widget.onCurrencyPairChanged(
-                        widget.exchangeRate?.fromCurrency ?? 'EUR',
-                        newCurrency,
-                      );
-                    } else {
-                      widget.onCurrencyPairChanged(
-                        newCurrency,
-                        widget.exchangeRate?.toCurrency ?? 'USD',
-                      );
-                    }
+                    widget.onCurrencyPairChanged(
+                      newCurrency,
+                      widget.exchangeRate?.toCurrency ?? 'USD',
+                    );
                   }
                 },
               ),
+
             ],
           ),
           const SizedBox(height: 20),
@@ -169,14 +149,14 @@ class _CurrencyConverterState extends State<CurrencyConverter> {
     }
 
     final amount = double.tryParse(_amountController.text) ?? 0;
+    final from = widget.exchangeRate!.fromCurrency;
+    final to = widget.exchangeRate!.toCurrency;
     final rate = widget.exchangeRate!.rate;
 
-    if (_isConvertingFromBase) {
-      return (amount * rate).toStringAsFixed(2);
-    } else {
-      return (amount / rate).toStringAsFixed(2);
-    }
+    // Always assume user enters FROM amount, convert to TO
+    return (amount * rate).toStringAsFixed(2);
   }
+
 
   void _convert() {
     setState(() {});

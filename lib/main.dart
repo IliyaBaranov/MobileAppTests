@@ -43,6 +43,16 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
     _fetchExchangeRate();
   }
 
+  void _swapCurrencies() {
+    setState(() {
+      final temp = _fromCurrency;
+      _fromCurrency = _toCurrency;
+      _toCurrency = temp;
+    });
+    _fetchExchangeRate();
+  }
+
+
   Future<void> _fetchExchangeRate() async {
     try {
       final rate = await _currencyService.getExchangeRate(_fromCurrency, _toCurrency);
@@ -61,9 +71,20 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
   }
 
   void _handleCurrencyPairChanged(String from, String to) {
+    if (_fromCurrency != from || _toCurrency != to) {
+      setState(() {
+        _fromCurrency = from;
+        _toCurrency = to;
+      });
+      _fetchExchangeRate();
+    }
+  }
+
+  void _handleSwapCurrencies() {
     setState(() {
-      _fromCurrency = from;
-      _toCurrency = to;
+      final temp = _fromCurrency;
+      _fromCurrency = _toCurrency;
+      _toCurrency = temp;
     });
     _fetchExchangeRate();
   }
@@ -87,6 +108,7 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
             exchangeRate: _exchangeRate,
             onRefresh: _fetchExchangeRate,
             onCurrencyPairChanged: _handleCurrencyPairChanged,
+            onSwapCurrencies: _handleSwapCurrencies, // Pass this!
           ),
         ),
       ),
